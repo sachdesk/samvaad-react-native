@@ -40,10 +40,8 @@ Yobruh support.").
 
 ### Android
 
-The binding depends on `com.samvaads:widget:0.1.0`. Until it is on Maven Central, add the
-Maven repository that hosts it to your app's Gradle repositories: see the
-[Android SDK README](https://github.com/sachdesk/samvaad-android#install). Autolinking
-does the rest.
+The binding depends on `com.samvaads:widget:0.1.0`, which comes from Maven Central
+(already in React Native's default repositories). Autolinking does the rest.
 
 ## Use it
 
