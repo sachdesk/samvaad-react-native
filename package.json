@@ -25,7 +25,7 @@
     "type": "git",
     "url": "git+https://github.com/sachdesk/samvaad-react-native.git"
   },
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "MIT",
   "author": "Sachdesk",
   "keywords": [
     "react-native",

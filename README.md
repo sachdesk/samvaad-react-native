@@ -138,4 +138,4 @@ npx jest
 
 ## License
 
-Copyright (c) 2026 Sachdesk. All rights reserved. See `LICENSE`.
+MIT. See `LICENSE`.

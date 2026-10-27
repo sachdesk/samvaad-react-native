@@ -7,7 +7,7 @@ Pod::Spec.new do |s|
   s.version      = package["version"]
   s.summary      = package["description"]
   s.homepage     = "https://github.com/sachdesk/samvaad-react-native"
-  s.license      = { :type => "Proprietary", :file => "LICENSE" }
+  s.license      = { :type => "MIT", :file => "LICENSE" }
   s.author       = "Sachdesk"
   s.source       = { :git => "https://github.com/sachdesk/samvaad-react-native.git", :tag => s.version.to_s }
 
