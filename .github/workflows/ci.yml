@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -17,3 +21,129 @@ jobs:
       - run: npm ci
       - run: npx tsc --noEmit
       - run: npx jest
+
+  # Builds example/ for Android, which compiles the binding's Kotlin against the
+  # Samvaad Android SDK (com.samvaads:widget), published to mavenLocal from samvaad-android.
+  example-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      # samvaad-android is private: it needs the SDK_READ_TOKEN secret (a token with read
+      # access to it) until the repo is public. Fail here, clearly, when there is no access.
+      - name: Check access to sachdesk/samvaad-android
+        env:
+          TOKEN: ${{ secrets.SDK_READ_TOKEN || github.token }}
+          GIT_TERMINAL_PROMPT: "0"
+        run: |
+          if ! git ls-remote "https://x-access-token:${TOKEN}@github.com/sachdesk/samvaad-android.git" HEAD > /dev/null 2>&1; then
+            echo "::error title=No access to sachdesk/samvaad-android::This job can't read the private SDK repo sachdesk/samvaad-android. Add a repository secret SDK_READ_TOKEN (a token with read access to sachdesk/samvaad-android and sachdesk/samvaad-ios) or make the SDK repos public."
+            exit 1
+          fi
+
+      - name: Check out the Samvaad Android SDK
+        uses: actions/checkout@v4
+        with:
+          repository: sachdesk/samvaad-android
+          ref: main
+          token: ${{ secrets.SDK_READ_TOKEN || github.token }}
+          path: sdk/samvaad-android
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v3
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            example/package-lock.json
+
+      - name: Publish the Android SDK to mavenLocal
+        working-directory: sdk/samvaad-android
+        run: ./gradlew :samvaad:publishToMavenLocal --stacktrace
+
+      - name: Install the package and the example
+        run: |
+          npm ci
+          npm ci --prefix example
+
+      - name: Build the example (assembleDebug)
+        working-directory: example/android
+        run: ./gradlew assembleDebug -PreactNativeArchitectures=x86_64 --stacktrace
+
+  # Builds example/ for the iOS Simulator, which compiles the binding's Swift and Obj-C
+  # against the Samvaad pod, taken from a checkout of samvaad-ios.
+  example-ios:
+    runs-on: macos-14
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      # samvaad-ios is private: see the matching step in example-android.
+      - name: Check access to sachdesk/samvaad-ios
+        env:
+          TOKEN: ${{ secrets.SDK_READ_TOKEN || github.token }}
+          GIT_TERMINAL_PROMPT: "0"
+        run: |
+          if ! git ls-remote "https://x-access-token:${TOKEN}@github.com/sachdesk/samvaad-ios.git" HEAD > /dev/null 2>&1; then
+            echo "::error title=No access to sachdesk/samvaad-ios::This job can't read the private SDK repo sachdesk/samvaad-ios. Add a repository secret SDK_READ_TOKEN (a token with read access to sachdesk/samvaad-android and sachdesk/samvaad-ios) or make the SDK repos public."
+            exit 1
+          fi
+
+      - name: Check out the Samvaad iOS SDK
+        uses: actions/checkout@v4
+        with:
+          repository: sachdesk/samvaad-ios
+          ref: main
+          token: ${{ secrets.SDK_READ_TOKEN || github.token }}
+          path: sdk/samvaad-ios
+
+      - name: Select Xcode 15.4
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            example/package-lock.json
+
+      - name: Install the package and the example
+        run: |
+          npm ci
+          npm ci --prefix example
+
+      - name: pod install
+        working-directory: example/ios
+        env:
+          SAMVAAD_IOS_PATH: ${{ github.workspace }}/sdk/samvaad-ios
+        run: pod install
+
+      - name: Build the example (iOS Simulator, Debug)
+        working-directory: example/ios
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -workspace YobruhShop.xcworkspace \
+            -scheme YobruhShop \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            build CODE_SIGNING_ALLOWED=NO | tee "$RUNNER_TEMP/xcodebuild.log" | grep -E "error:|warning: .*SamvaadWidget|BUILD (SUCCEEDED|FAILED)" || true
+          grep -q "BUILD SUCCEEDED" "$RUNNER_TEMP/xcodebuild.log"
+
+      - name: Upload the xcodebuild log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: ${{ runner.temp }}/xcodebuild.log
+          if-no-files-found: ignore

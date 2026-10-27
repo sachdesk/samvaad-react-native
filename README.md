@@ -136,6 +136,29 @@ npx tsc --noEmit
 npx jest
 ```
 
+## Example app
+
+`example/` is a small React Native 0.76 app (Yobruh Shop: a Help button with an unread
+badge that opens the chat with "Help with order YB-1042"). It uses this package through
+`"@samvaads/react-native-widget": "file:.."`, so autolinking builds the binding's native
+code into it. CI builds it for Android and the iOS Simulator on every pull request.
+
+Until the native SDKs are published, build them from source first:
+
+```sh
+npm ci && npm ci --prefix example
+
+# Android: publish com.samvaads:widget to mavenLocal (JDK 17), then build
+(cd ../samvaad-android && ./gradlew :samvaad:publishToMavenLocal)
+cd example/android && ./gradlew assembleDebug
+
+# iOS: point the Podfile at a samvaad-ios checkout (without it, the pod comes from main)
+cd example/ios && SAMVAAD_IOS_PATH=../../../samvaad-ios pod install
+open YobruhShop.xcworkspace
+```
+
+Replace the placeholder workspace ID in `example/App.tsx` with your own to try the chat.
+
 ## License
 
 Copyright (c) 2026 Sachdesk. All rights reserved. See `LICENSE`.
