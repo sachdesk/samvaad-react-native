@@ -21,14 +21,7 @@ Rebuild the app afterwards. Expo Go can't load it; use a development build.
 
 ### iOS
 
-The binding depends on the `Samvaad` pod. Until that pod is on CocoaPods trunk, add it to
-your `ios/Podfile`, inside your app target:
-
-```ruby
-pod 'Samvaad', :git => 'https://github.com/sachdesk/samvaad-ios.git', :tag => '0.1.0'
-```
-
-Then:
+The binding depends on the `Samvaad` pod, which CocoaPods fetches for you. Run:
 
 ```sh
 cd ios && pod install
