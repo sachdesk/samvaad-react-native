@@ -1,0 +1,23 @@
+# Node
+node_modules/
+lib/
+coverage/
+npm-debug.log*
+*.tgz
+
+# macOS
+.DS_Store
+
+# Android
+android/build/
+android/.gradle/
+android/.cxx/
+android/local.properties
+*.iml
+.idea/
+
+# iOS / Xcode
+ios/build/
+xcuserdata/
+DerivedData/
+*.xcuserstate
