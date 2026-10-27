@@ -1,0 +1,51 @@
+buildscript {
+  ext.safeExtGet = { prop, fallback ->
+    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+  }
+
+  // Only used when this folder is opened as a standalone project; apps supply their own.
+  if (project == rootProject) {
+    repositories {
+      google()
+      mavenCentral()
+    }
+    dependencies {
+      classpath "com.android.tools.build:gradle:8.2.2"
+      classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24"
+    }
+  }
+}
+
+apply plugin: "com.android.library"
+apply plugin: "kotlin-android"
+
+android {
+  namespace "com.samvaads.reactnative"
+  compileSdkVersion safeExtGet("compileSdkVersion", 34)
+
+  defaultConfig {
+    minSdkVersion Math.max(24, safeExtGet("minSdkVersion", 24) as int)
+    targetSdkVersion safeExtGet("targetSdkVersion", 34)
+  }
+
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
+  }
+
+  kotlinOptions {
+    jvmTarget = "17"
+  }
+}
+
+repositories {
+  google()
+  mavenCentral()
+}
+
+dependencies {
+  // Version comes from the app's React Native Gradle plugin.
+  implementation "com.facebook.react:react-android"
+  // api: apps can also call com.samvaads.widget.Samvaad directly (e.g. from their FirebaseMessagingService).
+  api "com.samvaads:widget:0.1.0"
+}
